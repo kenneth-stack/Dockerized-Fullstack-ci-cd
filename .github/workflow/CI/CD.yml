@@ -1,0 +1,46 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Dockerized-Fullstack
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Cache Docker layers
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
+
+    - name: Build Docker images
+      run: |
+        docker build -t frontend-image ./frontend
+        docker build -t backend-image ./backend
+
+    - name: Run backend tests
+      run: |
+        docker run --rm backend-image pytest  # Adjust this to match your backend test setup
+
+    - name: Run frontend tests
+      run: |
+        docker run --rm frontend-image npm test
+
+    - name: deploy
+      run: |
+        docker-compose up -d    
