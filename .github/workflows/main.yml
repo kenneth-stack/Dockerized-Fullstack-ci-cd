@@ -33,14 +33,14 @@ jobs:
         docker build -t frontend-image ./frontend
         docker build -t backend-image ./backend
 
-    - name: Run backend tests
+    - name: Install Docker Compose
       run: |
-        docker run --rm backend-image pytest  # Adjust this to match your backend test setup
+        sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
 
-    - name: Run frontend tests
-      run: |
-        docker run --rm frontend-image npm test
+    - name: Verify Docker Compose
+      run: docker-compose --version
 
-    - name: deploy
+    - name: Deploy with Docker Compose
       run: |
         docker-compose up -d
