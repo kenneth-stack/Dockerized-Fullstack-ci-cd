@@ -1,49 +1,96 @@
-name: CI/CD Pipeline
+version: '3.8'
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: fastapi_app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    env_file:
+      - ./backend/.env
+    environment:
+      - DOMAIN=http://52.87.230.149
+      - FIRST_SUPERUSER=devops@hng.tech
+      - FIRST_SUPERUSER_PASSWORD=devops#HNG11
+    networks:
+      - webnet
 
-jobs:
-  build:
-    name: Dockerized-Fullstack
-    runs-on: ubuntu-latest
+  frontend:
+    build:
+      context: ./frontend
+    container_name: nodejs_app
+    ports:
+      - "5173:5173"
+    env_file:
+      - ./frontend/.env
+    networks:
+      - webnet
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+  db:
+    image: postgres:13
+    container_name: postgres_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - ./backend/.env
+    networks:
+      - webnet
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+  adminer:
+    image: adminer
+    container_name: adminer
+    ports:
+      - "8080:8080"
+    networks:
+      - webnet
 
-    - name: Cache Docker layers
-      uses: actions/cache@v3
-      with:
-        path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-buildx-
+  proxy:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: nginx_proxy_manager
+    ports:
+      - "83:80"
+      - "445:443"
+      - "8090:81"
+    environment:
+      DB_SQLITE_FILE: "/data/database.sqlite"
+    volumes:
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
+    depends_on:
+      - db
+      - backend
+      - frontend
+      - adminer
+    networks:
+      - webnet
 
-    - name: Build Docker images
-      run: |
-        docker build -t frontend-image ./frontend
-        docker build -t backend-image ./backend
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Dockerized-FullStack/nginx.conf:/etc/nginx/nginx.conf
+      - ./Dockerized-FullStack/proxy.conf:/etc/nginx/conf.d/proxy.conf
+      - ./letsencrypt:/etc/letsencrypt
+    depends_on:
+      - backend
+      - frontend
+      - adminer
+      - proxy
+    networks:
+      - webnet
 
-    - name: Install Docker Compose
-      run: |
-        sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-        sudo chmod +x /usr/local/bin/docker-compose
+networks:
+  webnet:
 
-    - name: Verify Docker Compose
-      run: docker-compose --version
-
-    - name: Check Docker version
-      run: docker --version
-
-    - name: Deploy with Docker Compose
-      run: |
-        docker-compose up -d
+volumes:
+  postgres_data:
+  data:
+  letsencrypt:
