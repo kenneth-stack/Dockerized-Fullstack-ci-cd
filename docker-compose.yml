@@ -76,8 +76,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./Dockerized-FullStack/nginx.conf:/etc/nginx/nginx.conf
-      - ./Dockerized-FullStack/proxy.conf:/etc/nginx/conf.d/proxy.conf
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./proxy.conf:/etc/nginx/conf.d/proxy.conf
       - ./letsencrypt:/etc/letsencrypt
     depends_on:
       - backend
