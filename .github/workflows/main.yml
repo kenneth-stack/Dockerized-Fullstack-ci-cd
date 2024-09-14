@@ -41,6 +41,9 @@ jobs:
     - name: Verify Docker Compose
       run: docker-compose --version
 
+    - name: Check Docker version
+      run: docker --version
+
     - name: Deploy with Docker Compose
       run: |
         docker-compose up -d
