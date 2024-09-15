@@ -49,26 +49,6 @@ services:
     networks:
       - webnet
 
-  proxy:
-    image: jc21/nginx-proxy-manager:latest
-    container_name: nginx_proxy_manager
-    ports:
-      - "83:80"
-      - "445:443"
-      - "8090:81"
-    environment:
-      DB_SQLITE_FILE: "/data/database.sqlite"
-    volumes:
-      - ./data:/data
-      - ./letsencrypt:/etc/letsencrypt
-    depends_on:
-      - db
-      - backend
-      - frontend
-      - adminer
-    networks:
-      - webnet
-
   nginx:
     image: nginx:latest
     container_name: nginx
@@ -83,7 +63,6 @@ services:
       - backend
       - frontend
       - adminer
-      - proxy
     networks:
       - webnet
 
@@ -92,5 +71,4 @@ networks:
 
 volumes:
   postgres_data:
-  data:
   letsencrypt:
